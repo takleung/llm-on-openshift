@@ -2,7 +2,6 @@ import json
 import os
 import random
 import time
-import httpx
 from collections.abc import Generator
 from queue import Empty, Queue
 from threading import Thread
@@ -116,20 +115,16 @@ def stream(input_text, selected_collection) -> Generator:
         )
 
     # Create a Queue
-    job_done = object() 
-    
+    job_done = object()
+
     # Create a function to call - this will run in a thread
     def task():
-        with httpx.Client(verify=False) as client:  # Disable SSL verification
-            resp = qa_chain.invoke({"query": input_text})
+        resp = qa_chain.invoke({"query": input_text})
         sources = remove_source_duplicates(resp['source_documents'])
         if len(sources) != 0:
             q.put("\n*Sources:* \n")
             for source in sources:
                 q.put("* " + str(source) + "\n")
-        q.put(job_done)
-    except httpx.ConnectError as e:
-        q.put(f"Connection error: {e}")
         q.put(job_done)
 
     # Create a thread and start the function
